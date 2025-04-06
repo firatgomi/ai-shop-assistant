@@ -1,0 +1,1044 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        340,
+        340
+      ],
+      "id": "84e5645d-f135-4105-9ebf-2e10a01049a7",
+      "name": "Telegram Trigger",
+      "webhookId": "056b46d5-42b0-4288-86ff-d76b4a2fdb87",
+      "credentials": {
+        "telegramApi": {
+          "id": "4YqaCJqVjqqsOgzy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        660
+      ],
+      "id": "2ee61863-fb90-4345-bb60-ce942c60452b",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f430a83d-f781-4ca3-a59d-f994f8e38736",
+              "name": "chatInput",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "8898d2a3-aa21-415c-97e9-a6aabc816c3b",
+              "name": "sessionId",
+              "value": "={{ $json.message.from.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d2bccf2b-3a03-4a75-9a3f-e3f2cf929893",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        540
+      ],
+      "id": "552c9c5f-62d2-4cfe-8378-562d32bbebfb",
+      "name": "Agent Input"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        980,
+        900
+      ],
+      "id": "f114fbb6-bb1c-43a9-a75c-71697f123ab9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Agent Input').item.json.chatId }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2660,
+        640
+      ],
+      "id": "26208ad1-a7db-42f7-a8a0-8ea850131b6d",
+      "name": "Telegram",
+      "webhookId": "2b54aecb-2365-4206-b9dd-a5e0adf20b57",
+      "credentials": {
+        "telegramApi": {
+          "id": "4YqaCJqVjqqsOgzy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n$input.item.json.payload = {};\n\nfunction buildDynamicJson(chatInput) {\n  return {\n    contents: [\n      {\n        role: \"user\",\n        parts: [\n          {\n            text: JSON.stringify(query)\n          }\n        ]\n      }\n    ],\n    systemInstruction: {\n      role: \"user\",\n      parts: [\n        {\n          \"text\": `Research the given topic by the user.`\n        }\n      ]\n    },\n    tools: [\n      {\n        googleSearchRetrieval: {\n          dynamicRetrievalConfig: {\n            mode: \"MODE_DYNAMIC\",\n            dynamicThreshold: 0.2\n          }\n        }\n      }\n    ],\n    generationConfig: {\n      temperature: 0.5,\n      topK: 40,\n      topP: 0.95,\n      maxOutputTokens: 8192,\n      responseMimeType: \"text/plain\",\n    }\n  };\n}\nvar query = $input.item.json.query?.query;\nif(!query) query = $input.item.json.query;\n$input.item.json.payload = buildDynamicJson(query);\n\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        1140
+      ],
+      "id": "1842b2d5-99f0-4103-9b22-8e3ce9633175",
+      "name": "Params1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        1140
+      ],
+      "id": "ca26a15f-e9af-438d-8074-f1e376aa65f0",
+      "name": "Gemini Search Tool",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlzbYQ27V5OoKPbo",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "23265107-4ebd-445f-bf3b-40acf04e4082",
+              "name": "output",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        1140
+      ],
+      "id": "b5556ef3-2ee9-459f-9655-bc053957d9d0",
+      "name": "Parse Output as Tool Output"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        540,
+        1140
+      ],
+      "id": "50a357c5-4817-4cb3-8d7e-546aa6e67e94",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "content": "## Gemini Search Tool with System Prompt",
+        "height": 280,
+        "width": 920,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        1060
+      ],
+      "typeVersion": 1,
+      "id": "10501954-4f53-4b44-ad0e-a51c6b6dbfa7",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "name": "search_tool",
+        "description": "use this tool when you want to research information of a given topic and it will enable you to utilize google or web search in general.\nProvide a \"query\" with your search query.",
+        "source": "parameter",
+        "workflowJson": "={\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"mode\": \"runOnceForEachItem\",\n        \"jsCode\": \"// Add a new field called 'myNewField' to the JSON of the item\\n$input.item.json.payload = {};\\n\\nfunction buildDynamicJson(chatInput) {\\n  return {\\n    contents: [\\n      {\\n        role: \\\"user\\\",\\n        parts: [\\n          {\\n            text: JSON.stringify(query)\\n          }\\n        ]\\n      }\\n    ],\\n    systemInstruction: {\\n      role: \\\"user\\\",\\n      parts: [\\n        {\\n          \\\"text\\\": `Research the given topic by the user.`\\n        }\\n      ]\\n    },\\n    tools: [\\n      {\\n        googleSearchRetrieval: {\\n          dynamicRetrievalConfig: {\\n            mode: \\\"MODE_DYNAMIC\\\",\\n            dynamicThreshold: 0.2\\n          }\\n        }\\n      }\\n    ],\\n    generationConfig: {\\n      temperature: 0.5,\\n      topK: 40,\\n      topP: 0.95,\\n      maxOutputTokens: 8192,\\n      responseMimeType: \\\"text/plain\\\",\\n    }\\n  };\\n}\\nvar query = $input.item.json.query?.query;\\nif(!query) query = $input.item.json.query;\\n$input.item.json.payload = buildDynamicJson(query);\\n\\n\\nreturn $input.item;\"\n      },\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [\n        740,\n        1140\n      ],\n      \"id\": \"1842b2d5-99f0-4103-9b22-8e3ce9633175\",\n      \"name\": \"Params1\"\n    },\n    {\n      \"parameters\": {\n        \"method\": \"POST\",\n        \"url\": \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent\",\n        \"authentication\": \"predefinedCredentialType\",\n        \"nodeCredentialType\": \"googlePalmApi\",\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {}\n          ]\n        },\n        \"sendBody\": true,\n        \"specifyBody\": \"json\",\n        \"jsonBody\": \"={{ $json.payload }}\",\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.2,\n      \"position\": [\n        980,\n        1140\n      ],\n      \"id\": \"ca26a15f-e9af-438d-8074-f1e376aa65f0\",\n      \"name\": \"Gemini Search Tool\",\n      \"credentials\": {\n        \"googlePalmApi\": {\n          \"id\": \"rlzbYQ27V5OoKPbo\",\n          \"name\": \"Google Gemini(PaLM) Api account 2\"\n        }\n      }\n    },\n    {\n      \"parameters\": {\n        \"assignments\": {\n          \"assignments\": [\n            {\n              \"id\": \"23265107-4ebd-445f-bf3b-40acf04e4082\",\n              \"name\": \"output\",\n              \"value\": \"={{ $json.candidates[0].content.parts[0].text }}\",\n              \"type\": \"string\"\n            }\n          ]\n        },\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.set\",\n      \"typeVersion\": 3.4,\n      \"position\": [\n        1200,\n        1140\n      ],\n      \"id\": \"b5556ef3-2ee9-459f-9655-bc053957d9d0\",\n      \"name\": \"Parse Output as Tool Output\"\n    },\n    {\n      \"parameters\": {},\n      \"type\": \"n8n-nodes-base.manualTrigger\",\n      \"typeVersion\": 1,\n      \"position\": [\n        540,\n        1140\n      ],\n      \"id\": \"50a357c5-4817-4cb3-8d7e-546aa6e67e94\",\n      \"name\": \"When clicking ‘Test workflow’\"\n    }\n  ],\n  \"connections\": {\n    \"Params1\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Gemini Search Tool\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Gemini Search Tool\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Parse Output as Tool Output\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"When clicking ‘Test workflow’\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Params1\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"pinData\": {},\n  \"meta\": {\n    \"templateCredsSetupCompleted\": true,\n    \"instanceId\": \"5e7b9b0decc00c2a319b0b4254539b5639ca648994c25a842f9a6384f42bb519\"\n  }\n}",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n\t\"query\": \"your search query\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1160,
+        880
+      ],
+      "id": "c4eb1385-c123-4cf9-98d9-0ad247113144",
+      "name": "Gemini Search as Tool"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "21c26599-cffa-4702-b9cb-ccb31294d7bc",
+              "name": "=message.text",
+              "value": "Provide the User with Sales Predictions for the current day. Also.. GREET the user, because it will be the first time you write him today.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        660
+      ],
+      "id": "bc3e3b75-78b1-4ca5-952b-6065f1e1e2bb",
+      "name": "Automatic Invocation"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        120
+      ],
+      "id": "a43de23d-3172-4469-8f30-78a6bf887098",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hhj_kS0m0bKhPHQXYX1kMr2LqxVaVg2Nu2Yst9zL95E",
+          "mode": "list",
+          "cachedResultName": "Expected Sales Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hhj_kS0m0bKhPHQXYX1kMr2LqxVaVg2Nu2Yst9zL95E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sPkYQFAoEukKT_SO8fr5FcMGJBOAnDV6DUz207Qe7Ic/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Expected Sales": "={{ $json['Expected Sales'] }}",
+            "Order Volume": "={{ $json['Order Volume'] }}",
+            "Day": "={{ $json.Day }}",
+            "Weather": "={{ $json.Weather }}",
+            "Nearby Events": "={{ $json['Nearby Events'] }}",
+            "Staff Needed": "={{ $('Agent with Data Structured Output').item.json.output['Staff Needed'] }}",
+            "Ingredients Needed": "={{ $json['Ingredients Needed'] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Day",
+              "displayName": "Day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Weather",
+              "displayName": "Weather",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nearby Events",
+              "displayName": "Nearby Events",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Expected Sales",
+              "displayName": "Expected Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Staff Needed",
+              "displayName": "Staff Needed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Order Volume",
+              "displayName": "Order Volume",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ingredients Needed",
+              "displayName": "Ingredients Needed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2000,
+        0
+      ],
+      "id": "d98a8d26-0879-4997-863d-9a38ce3184f9",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "f6t7jIJZwimLwYvi",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "sales-dashboard-update",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        840
+      ],
+      "id": "6e9d1b7b-e0ed-436c-8199-9b43519b5566",
+      "name": "Webhook1",
+      "webhookId": "6d6cf3bf-59de-4a70-bf5f-15db155fbe21"
+    },
+    {
+      "parameters": {
+        "content": "## Updating automatically or based on invocation\n",
+        "height": 380,
+        "width": 580
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        600
+      ],
+      "typeVersion": 1,
+      "id": "d567dfa1-f17e-469b-a0bb-cca430ca7f21",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Chatbot Invocation",
+        "height": 220,
+        "width": 520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        20,
+        280
+      ],
+      "typeVersion": 1,
+      "id": "76d44a3f-944d-4542-ba96-4fdab3eb17b0",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Your task is predict the Sales of a local Business based in Berlin for the next day.\n\nToday is: {{ $now.toISO() }}\n\nTo predict the sales of this Business utilize:\n\n* A Weather Search of the next day\n* Search for events that will happen in East Side Mall or in the nearby vicinity for the next day\n* Maybe there are specific events (like big sport events or concerts or city-wide festivals)?'\n* Are there holidays, that might impact orders\n\nTHEN:\n* Make assumptions regarding orders based on the data you fetched, comparing it with the historic sales data that you have.\nAfter the sale date is created, according to the orders we'll receive, create a prediction of how much ingredient we'll need, based on the \"menu ingredients\" data below.\n\n\nHere is how the historic sales data might be helpful in understanding its effects and make accurate predictions for the future:\nBeef Burger: Contains Beef Patty, Standard Bun, Lettuce, Tomato, Special Sauce.\n\nChicken Burger: Contains Chicken Patty, Standard Bun, Lettuce, Tomato, Mayo Sauce.\n\nVeggie Burger: Contains Veggie Patty (e.g., Halloumi/Bean), Standard Bun, Lettuce, Tomato, Special Sauce.\n\nVegan Burger: Contains Vegan Patty (Plant-based), Vegan Bun, Lettuce, Tomato, Vegan Mayo Sauce.\n\nFries: Made from Potatoes, Frying Oil, Salt.\n\nOnion Rings: Made from Onions, Batter Mix, Frying Oil.\n\nCola: Made from Cola Syrup, Carbonated Water.\n\nBeer: Kegged Pilsner Beer.\n\nWater: Bottled Still Water.\n\nBrownie: Pre-made Brownie.\n\n\n**Core Sales Factors for Firat's Burger House (Berlin):**\n\n*   **Day of Week:**\n    *   **Baseline:** Monday-Thursday are typical weekdays.\n    *   **Peak:** Friday and Saturday see significantly higher traffic (+30% to +50% baseline), extending later into the night. Beer sales are notably higher.\n    *   **Moderate Peak:** Sunday is busier than weekdays (+20% to +30%), but often less than Friday/Saturday, potentially with more families earlier and less late-night volume.\n\n*   **Weather & Temperature:**\n    *   **Good Weather (Sunny/Warm/Hot):** Generally increases foot traffic and sales (+15% to +30%). Drink sales (Cola, Water, Beer) see a larger proportional increase. Hot weather boosts Water and Cola more than Beer sometimes. People might sit outside if possible.\n    *   **Bad Weather (Rainy/Very Cold/Snowy):** Generally decreases foot traffic and sales (-10% to -30%). Delivery orders (if enabled via platforms) might see a slight relative increase compared to walk-ins. Less desire for cold drinks.\n\n*   **Calendar Context:**\n    *   **Public Holidays (German/Berlin):** Treat similar to a busy Saturday or Sunday (+40% to +60%), often with more daytime traffic. Check specific holidays (New Year's Day, Easter Monday, Labour Day, Ascension Day, Whit Monday, German Unity Day, Christmas Days).\n    *   **Long Weekends (Brückentage):** Days bridging a holiday and a weekend often behave like a Friday or Saturday.\n\n*   **Nearby Events (Location Dependent - Requires Context):**\n    *   **Football Match (Major Berlin Clubs - Hertha/Union Home Game):** Significant increase (+25% overall) before and especially after the match. Skews heavily towards Beef Burgers, Chicken Burgers, Fries, and Beer. Veg/Vegan options and Water sales might see less of a boost or even stay flat.\n    *   **Concert (Pop/Young Artist @ Arena/Venue):** Moderate increase (+20% overall). Skews towards Veggie/Vegan Burgers, Fries, Cola, and Water. Beer sales might be lower than usual for the volume.\n    *   **Concert (Rock/Metal @ Arena/Venue):** Moderate to significant increase (+25% overall). Skews towards Beef Burgers, Fries, and especially Beer.\n    *   **Street Festival/Major City Event (e.g., Karneval der Kulturen, CSD Parade, May Day in Kreuzberg):** High increase (+50% to +70%), especially if the route/area is very close. Demand is high across the board, particularly for easily consumable items like Fries and all Drinks. Burger type preference might be less pronounced than usual.\n    *   **Christmas Markets (Late Nov - Dec):** Provides a consistent moderate boost to background foot traffic nearby (+10% to +20%). May slightly increase demand for warmer items if offered, or standard comfort food like burgers/fries and Beer/Brownies.\n\n*   **Seasonality:**\n    *   **Summer (June-August):** Generally the busiest period overall due to tourism and good weather likelihood.\n    *   **Winter (Jan-Feb):** Generally the quietest period, excluding specific events/holidays.\n    *   **Spring/Autumn:** Transitional periods with variable sales based heavily on weather and events.\n\n*   **General Notes for AI:**\n    *   These factors often combine (e.g., a Sunny Saturday with a Football Match is extremely busy).\n    *   Consider time-of-day patterns (lunch rush, dinner peak, late-night weekend rush). (This might be too complex for the hackathon but good context).\n    *   Unexpected local disruptions (U-Bahn closures, construction) can negatively impact sales. (Hard to predict).\n\nALWAYS MAKE SURE TO GET INFORMATION FROM search_tool_2 (NAMED GEMINI SEARCH TOOL) AND HISTORIC SALES DATA 2 TOOL AND ALL THE TOOLS AVAILABLE TO YOU.\n\nANSWER IN JSON. MAKE YOUR PREDICTIONS IN JSON.\n\nTHE STRUCTURE IS AS BELOW:\n{\n\"Day\": \"20-04-2025\",\n  \"Weather\": \"Sunny\",\n\"Nearby Events\": \"Match\",\n\"Expected Sales\": 4567,\n\"Staff Needed\": 4,\n\"Order Volume\": 430,\n\"Ingredients Needed\": \"20 Beef Patties, 40 Chicken Patties, 4 Kg Potatoes, 4 KG Salads\"\n}\n\nBE ACCURATE. GIVE CORRECT ANSWERS. I DON'T ACCEPT ANSWERS LIKE \"UNKNOWN\" OR \"STANDARD\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1140,
+        60
+      ],
+      "id": "123b837e-bfa4-4d6b-8fc3-891fe5f3bd97",
+      "name": "Agent with Data Structured Output"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Your task is predict the Sales of a local Business based in Berlin for the next day.\n\nToday is: {{ $now.toISO() }}\n\nTo predict the sales of this Business utilize:\n\n* A Weather Search of the next day\n* Search for events that will happen in East Side Mall or in the nearby vicinity for the next day\n* Maybe there are specific events (like big sport events or concerts or city-wide festivals)?'\n* Are there holidays, that might impact orders\n\nTHEN:\n* Make assumptions regarding orders based on the data you fetched, comparing it with the historic sales data that you have\n\nALWAYS MAKE SURE TO GET INFORMATION FROM GEMINI SEARCH AND HISTORIC SALES DATA SHEET AND ALL THE TOOLS AVAILABLE TO YOU.\n\nKEEP THE ANSWER SHORT AND ONPOINT. 1 sentence on each point, no more then 10 words, like a structured bullet list output. Here is an example below, don't say anything else, no greeting, no unnecessary words.\nThe day: 21 April Monday, Holiday\nWeather: 7 degrees, sunny\nEvents: Basketball Match\nPossible Sales: XXXX $\nOrder volume:\n- X amount of meat burgers\n- Y amount of ...\nStaff Needed: 4"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        920,
+        640
+      ],
+      "id": "2048ebb8-e3e1-4525-a540-c6883668a530",
+      "name": "Conversational Agent",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        760
+      ],
+      "id": "8bdfa2b4-ccd6-4ada-979c-883d63d7c64f",
+      "name": "Respond to Webhook",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2180,
+        0
+      ],
+      "id": "d5dbb251-bcd3-4c82-a0b6-93f468a73c16",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        820,
+        860
+      ],
+      "id": "5c20200a-305f-4e7f-9a40-62598c385f03",
+      "name": "Mistral Cloud Chat Model1",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "iRm7JrvjWofrCZ3k",
+          "name": "Mistral Cloud account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg",
+          "mode": "list",
+          "cachedResultName": "Fake Data for AI Shop Assistant",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        1380,
+        880
+      ],
+      "id": "f719f898-7f0f-4d9c-af4e-215c7890bb5e",
+      "name": "Historic Sales Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "f6t7jIJZwimLwYvi",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "gemini_tool",
+        "description": "use this tool when you want to research information of a given topic and it will enable you to utilize google or web search in general.\nProvide a \"query\" with your search query.",
+        "source": "parameter",
+        "workflowJson": "{\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"mode\": \"runOnceForEachItem\",\n        \"jsCode\": \"// Add a new field called 'myNewField' to the JSON of the item\\n$input.item.json.payload = {};\\n\\nfunction buildDynamicJson(chatInput) {\\n  return {\\n    contents: [\\n      {\\n        role: \\\"user\\\",\\n        parts: [\\n          {\\n            text: JSON.stringify(query)\\n          }\\n        ]\\n      }\\n    ],\\n    systemInstruction: {\\n      role: \\\"user\\\",\\n      parts: [\\n        {\\n          \\\"text\\\": `Research the given topic by the user.`\\n        }\\n      ]\\n    },\\n    tools: [\\n      {\\n        googleSearchRetrieval: {\\n          dynamicRetrievalConfig: {\\n            mode: \\\"MODE_DYNAMIC\\\",\\n            dynamicThreshold: 0.2\\n          }\\n        }\\n      }\\n    ],\\n    generationConfig: {\\n      temperature: 0.5,\\n      topK: 40,\\n      topP: 0.95,\\n      maxOutputTokens: 8192,\\n      responseMimeType: \\\"text/plain\\\",\\n    }\\n  };\\n}\\nvar query = $input.item.json.query?.query;\\nif(!query) query = $input.item.json.query;\\n$input.item.json.payload = buildDynamicJson(query);\\n\\n\\nreturn $input.item;\"\n      },\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [\n        740,\n        1140\n      ],\n      \"id\": \"1842b2d5-99f0-4103-9b22-8e3ce9633175\",\n      \"name\": \"Params1\"\n    },\n    {\n      \"parameters\": {\n        \"method\": \"POST\",\n        \"url\": \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent\",\n        \"authentication\": \"predefinedCredentialType\",\n        \"nodeCredentialType\": \"googlePalmApi\",\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {}\n          ]\n        },\n        \"sendBody\": true,\n        \"specifyBody\": \"json\",\n        \"jsonBody\": \"={{ $json.payload }}\",\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.2,\n      \"position\": [\n        980,\n        1140\n      ],\n      \"id\": \"ca26a15f-e9af-438d-8074-f1e376aa65f0\",\n      \"name\": \"Gemini Search Tool\",\n      \"credentials\": {\n        \"googlePalmApi\": {\n          \"id\": \"rlzbYQ27V5OoKPbo\",\n          \"name\": \"Google Gemini(PaLM) Api account 2\"\n        }\n      }\n    },\n    {\n      \"parameters\": {\n        \"assignments\": {\n          \"assignments\": [\n            {\n              \"id\": \"23265107-4ebd-445f-bf3b-40acf04e4082\",\n              \"name\": \"output\",\n              \"value\": \"={{ $json.candidates[0].content.parts[0].text }}\",\n              \"type\": \"string\"\n            }\n          ]\n        },\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.set\",\n      \"typeVersion\": 3.4,\n      \"position\": [\n        1200,\n        1140\n      ],\n      \"id\": \"b5556ef3-2ee9-459f-9655-bc053957d9d0\",\n      \"name\": \"Parse Output as Tool Output\"\n    },\n    {\n      \"parameters\": {},\n      \"type\": \"n8n-nodes-base.manualTrigger\",\n      \"typeVersion\": 1,\n      \"position\": [\n        540,\n        1140\n      ],\n      \"id\": \"50a357c5-4817-4cb3-8d7e-546aa6e67e94\",\n      \"name\": \"When clicking ‘Test workflow’\"\n    }\n  ],\n  \"connections\": {\n    \"Params1\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Gemini Search Tool\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Gemini Search Tool\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Parse Output as Tool Output\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"When clicking ‘Test workflow’\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Params1\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"pinData\": {},\n  \"meta\": {\n    \"templateCredsSetupCompleted\": true,\n    \"instanceId\": \"5e7b9b0decc00c2a319b0b4254539b5639ca648994c25a842f9a6384f42bb519\"\n  }\n}",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n\t\"query\": \"your search query\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1320,
+        360
+      ],
+      "id": "246b9d23-b639-48eb-b190-799e87ac7e6a",
+      "name": "Gemini All Search"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        380
+      ],
+      "id": "3919e89a-ed4a-4d46-a22d-f6228c0270f4",
+      "name": "Simple Memory from Chat"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg",
+          "mode": "list",
+          "cachedResultName": "Fake Data for AI Shop Assistant",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cyQWKSIW85ziBZOdI2t3f-timikufWMkjOQ5IwwE5Bg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        1460,
+        340
+      ],
+      "id": "4e769429-42c2-4dbb-950c-62352fc5991a",
+      "name": "Historic Sales Data 2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "f6t7jIJZwimLwYvi",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ],
+      "id": "a9d54812-5ffa-4da3-9095-28bd130b5d37",
+      "name": "Mistral Cloud Chat Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "iRm7JrvjWofrCZ3k",
+          "name": "Mistral Cloud account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "prompt": "Instructions:\n--------------\n{instructions}\n--------------\nCompletion:\n--------------\n{completion}\n--------------\n\nAbove, the Completion did not satisfy the constraints given in the Instructions.\nError:\n--------------\n{error}\n--------------\n\nPlease try again. Please only respond with an answer that satisfies the constraints laid out in the Instructions:"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        340
+      ],
+      "id": "951d4436-c1f7-433a-860d-057d05c16764",
+      "name": "Auto-fixing Output Parser"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\"Day\": \"20-04-2025\",\n  \"Weather\": \"Sunny\",\n\"Nearby Events\": \"Match\",\n\"Expected Sales\": 4567,\n\"Staff Needed\": 4,\n\"Order Volume\": 430,\n\"Ingredients Needed\": \"20 Beef Patties, 40 Chicken Patties, 4 Kg Potatoes, 4 KG Salads\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1580,
+        540
+      ],
+      "id": "fda67c52-6dfb-4457-a7ff-4c2db6f78549",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        520
+      ],
+      "id": "964556f6-2a75-43d6-82c1-4334039fedb7",
+      "name": "Mistral Cloud Chat Model2",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "iRm7JrvjWofrCZ3k",
+          "name": "Mistral Cloud account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Your job is to take the  {{ JSON.stringify($json.output) }} and make it a readable output while KEEP THE ANSWER SHORT AND ONPOINT. 1 sentence on each point, no more then 10 words, like a structured bullet list output. Here is an example below, don't say anything else, no greeting, no unnecessary words.\nThe day: 21 April Monday, Holiday\nWeather: 7 degrees, sunny\nEvents: Basketball Match\nExpected Sales: XXXX $\nOrder volume:\n- X amount of meat burgers\n- Y amount of ...\nStaff Needed: 4",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        2040,
+        320
+      ],
+      "id": "de79cdc2-3020-465e-92a3-017c0b00fa73",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        540
+      ],
+      "id": "2f1b6684-1f3c-421d-95cb-8274c4798092",
+      "name": "Mistral Cloud Chat Model3",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "iRm7JrvjWofrCZ3k",
+          "name": "Mistral Cloud account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Automatic Invocation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Input": {
+      "main": [
+        [
+          {
+            "node": "Conversational Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Conversational Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Params1": {
+      "main": [
+        [
+          {
+            "node": "Gemini Search Tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Search Tool": {
+      "main": [
+        [
+          {
+            "node": "Parse Output as Tool Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Params1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Search as Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Conversational Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Automatic Invocation": {
+      "main": [
+        [
+          {
+            "node": "Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Automatic Invocation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent with Data Structured Output": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversational Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Mistral Cloud Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Conversational Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Historic Sales Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "Conversational Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini All Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory from Chat": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Historic Sales Data 2": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-fixing Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agent with Data Structured Output",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "update_id": 528938843,
+        "message": {
+          "message_id": 15,
+          "from": {
+            "id": 6309631842,
+            "is_bot": false,
+            "first_name": "Fırat",
+            "last_name": "Gömi",
+            "language_code": "en"
+          },
+          "chat": {
+            "id": 6309631842,
+            "first_name": "Fırat",
+            "last_name": "Gömi",
+            "type": "private"
+          },
+          "date": 1743932165,
+          "text": "Hi, what will be the sales prediction for tomorrow?"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e7b9b0decc00c2a319b0b4254539b5639ca648994c25a842f9a6384f42bb519"
+  }
+}
